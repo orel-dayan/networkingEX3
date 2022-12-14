@@ -82,11 +82,6 @@ int main()
         exit(1);
     }
 
-    char *message = "Welcome to our TCP-server\n";
-    int message_len = strlen(message);
-
-
-
 
     while (1)
     {

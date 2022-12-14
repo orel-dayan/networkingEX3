@@ -107,7 +107,7 @@ int main()
             exit(1);
         }
 
-        sleep(3);
+        sleep(1);
 
         if (setsockopt(socket_fd, IPPROTO_TCP, TCP_CONGESTION, "reno", 4) == -1)
         {

@@ -1,4 +1,4 @@
-all: clean receiver sender
+all: receiver sender
 
 receiver: 
 	gcc -o receiver receiver.c -Wall
