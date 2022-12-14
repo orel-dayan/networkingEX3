@@ -1,0 +1,10 @@
+//
+// Created by shahar on 12/4/22.
+//
+
+#ifndef MATALA3TIKSHORET_SENDER_H
+#define MATALA3TIKSHORET_SENDER_H
+
+#endif //MATALA3TIKSHORET_SENDER_H
+
+
