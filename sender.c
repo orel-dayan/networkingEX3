@@ -71,8 +71,7 @@ int main()
 
     /////////////////////////////////////////////////////////////////////////////////////////////
 
-
-    while (wantToExit == 0)
+    while (1)
     {
         if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, "cubic", 5) == -1)
         {

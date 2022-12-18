@@ -1,31 +1,39 @@
+#include <stdio.h>
+#include <stdio.h>
+#include <sys/time.h>
+#include <time.h>
+#include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <stdbool.h>
+#include <limits.h>
+#include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
-#include <stdlib.h>
-#include <string.h>
-#include <errno.h>
-#include <signal.h>
 #include <stdio.h>
 #include <time.h>
-#include <arpa/inet.h>
+#include <errno.h>
+#include "myqueue.h"
+
 
 #define SERVER_PORT 5060
 #define FILE_SIZE_IN_BYTES 1979600
 #define CHUNK_SIZE 10000
 
 void receive_file(int client_socket, int server_socket_fd);
-void send_message_to_client(char *message, int client_socket, int server_socket_fd, int message_len);
+
+void print_report(int number_of_iterations);
 
 int main()
 {
     int dtaz1 = 0700;
     int dtaz2 = 8577;
     int xor = dtaz1 ^ dtaz2;
-    time_t times = 0;
-    int times_counter = 0;
-
-    signal(SIGPIPE, SIG_IGN);
+ 
+ 
 
     // creating the server socket with the function socket()
     int server_socket_fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -66,6 +74,8 @@ int main()
         close(server_socket_fd);
         exit(1);
     }
+    while(1)
+    {
 
     // declaring a new struct for the client port and ip. accept will fill these in the struct
     printf("Waiting for incoming TCP-connections...\n");
@@ -81,18 +91,27 @@ int main()
         close(server_socket_fd);
         exit(1);
     }
+    int iteration_number = 0;
 
 
     while (1)
     {
-        time_t time_stamp1 = time(NULL);
+        struct timeval start_t_cubic, end_t_cubic, tval_result_cubic; // will use them to check the timing
+        struct timeval start_t_reno, end_t_reno, tval_result_reno;  
+          // will use them to check the timing
+        gettimeofday(&start_t_cubic, NULL);
         receive_file(client_socket, server_socket_fd);
-        time_t time_stamp2 = time(NULL);
-        times += time_stamp2 - time_stamp1;
-        times_counter++;
-
-    
-
+        iteration_number++;
+        gettimeofday(&end_t_cubic, NULL);
+        timersub(&end_t_cubic, &start_t_cubic, &tval_result_cubic);
+        long int *time_elapsed_cubic = (long int *)malloc(sizeof(long int));
+        *time_elapsed_cubic = tval_result_cubic.tv_sec * 1000000 + tval_result_cubic.tv_usec;
+        int *iteration_number_p = (int *)malloc(sizeof(int));
+        *iteration_number_p = iteration_number;
+        int *cubic_param = (int *)malloc(sizeof(int));
+        *cubic_param = 0;
+        enqueue(time_elapsed_cubic, iteration_number_p, cubic_param);
+        
         ///////////////////////////////////////////////////////////////////////////////////////////////////
 
         int num_message = xor;
@@ -126,32 +145,84 @@ int main()
         }
 
 
-        time_stamp1 = time(NULL);
+        gettimeofday(&start_t_reno, NULL);
         receive_file(client_socket, server_socket_fd);
-        time_stamp2 = time(NULL);
-        times += time_stamp2 - time_stamp1;
-        times_counter++;
-
+         gettimeofday(&end_t_reno, NULL);                         // finish count for first part of the file
+        timersub(&end_t_reno, &start_t_reno, &tval_result_reno); // the total time reno
+        printf("algo: reno, time: %ld.%06ld, iter num: %d\n", (long int)tval_result_reno.tv_sec, (long int)tval_result_reno.tv_usec, iteration_number);
+        // store the time elapsed in a variable
+        long int time_elapsed_reno = tval_result_reno.tv_sec * 1000000 + tval_result_reno.tv_usec;
+        long int *time_elapsed_reno_p = (long int *)malloc(sizeof(long int));
+        *time_elapsed_reno_p = time_elapsed_reno;
+        int *reno_param = (int *)malloc(sizeof(int));
+        *reno_param = 1;
+        enqueue(time_elapsed_reno_p, iteration_number_p, reno_param);
+        ///////////////////////////////////////////////////////////////////////////////////////////////////
+      
 
 
         char ans;
         recv(client_socket, &ans, sizeof(char), 0);
         if (ans == 'Y')
         {
-            printf("average file time: %ld", times / times_counter);
+              // print out the report
+            printf("#######################\n");
+            printf("#######################\n");
+            printf("the report is \n");
+            print_report(iteration_number);
             close(client_socket);
-            close(server_socket_fd);
-            exit(1);
+            printf("closing client socket \n");
+            exit(0);
+           
         }
         else
         {
             continue;
         }
+
+       }
     }
 
     close(server_socket_fd);
     return 0;
 }
+
+
+void print_report(int number_of_iterations)
+{
+    long int avg_cubic = 0;
+    long int avg_reno = 0;
+    long int avg_total = 0;
+    long int number_of_dequeue = 0;
+
+    // dequeue the queue and print out the report
+    while (head != NULL)
+    {
+        if (
+            // compare the head->cubic_is_0_reno_is_1 to 0 but remember that it is a pointer
+            // so you need to dereference it
+            *head->cubic_is_0_reno_is_1 == 0
+
+        )
+        {
+            avg_cubic += *head->time_in_micro_seconds;
+        }
+        else if (*head->cubic_is_0_reno_is_1 == 1)
+        {
+            avg_reno += *head->time_in_micro_seconds;
+        }
+        avg_total += *head->time_in_micro_seconds;
+        dequeue();
+        number_of_dequeue++;
+    }
+
+    printf("-----------------------\n");
+    printf("-----------------------\n");
+    printf("the average time for cubic is %ld \n", avg_cubic / number_of_iterations);
+    printf("the average time for reno is %ld \n", avg_reno / number_of_iterations);
+    printf("the average time for total is %ld \n", avg_total / number_of_dequeue);
+}
+
 
 void receive_file(int client_socket, int server_socket_fd)
 {
@@ -194,26 +265,3 @@ void receive_file(int client_socket, int server_socket_fd)
     free(receive_space);
 }
 
-inline void send_message_to_client(char *message, int client_socket, int server_socket_fd, int message_len)
-{
-    int bytes_sent = send(client_socket, message, message_len, 0);
-    if (bytes_sent == -1)
-    {
-        printf("send() failed with error code : %d\n", errno);
-        close(server_socket_fd);
-        close(client_socket);
-        exit(1);
-    }
-    else if (bytes_sent == 0)
-    {
-        printf("peer has closed the TCP connection prior to send().\n");
-    }
-    else if (bytes_sent < message_len)
-    {
-        printf("sent only %d bytes from the required %d.\n", message_len, bytes_sent);
-    }
-    else
-    {
-        printf("message was successfully sent.\n");
-    }
-}
