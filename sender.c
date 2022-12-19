@@ -13,7 +13,6 @@
 #define FILE_SIZE_IN_BYTES 1979600
 
 void send_message_to_server(char *half_file, int socket_fd);
-void receive_message_from_server(int socket_fd);
 
 int main()
 {
@@ -199,26 +198,3 @@ void send_message_to_server(char *half_file, int socket_fd)
     }
 }
 
-void receive_message_from_server(int socket_fd)
-{
-    char *receive_space = (char *)calloc(sizeof(char), 1000);
-    if (receive_space == NULL)
-    {
-        printf("space wasn't allocated, screw you");
-        close(socket_fd);
-        exit(1);
-    }
-    int bytes_received = recv(socket_fd, receive_space, 1000, 0);
-    if (bytes_received == -1)
-    {
-        printf("recv() failed with error code : %d", errno);
-    }
-    else if (bytes_received == 0)
-    {
-        printf("peer has closed the TCP connection prior to recv().\n");
-    }
-    else
-    {
-        printf("received %d bytes from server: %s\n", bytes_received, receive_space);
-    }
-}
