@@ -116,10 +116,6 @@ int main()
         printf("sending the second part of the file\n");
         send_message_to_server(second_half_message, socket_fd);
 
-        char F;
-        char F_received = recv(socket_fd, &F, sizeof(char), 0);
-        if(F_received == -1) exit(1);
-        if(F == 'F') continue;
 
         free_will:
         printf("Send the file again? (y/n): ");

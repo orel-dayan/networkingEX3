@@ -164,24 +164,6 @@ int main()
         enqueue(time_elapsed_reno_p, iteration_number_p, reno_param);
         ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-        char finish;
-        int F_sent = send(client_socket, &finish, sizeof(char), 0);
-        if (F_sent == -1)
-        {
-            printf("send() failed with error code : %d\n", errno);
-            close(server_socket_fd);
-            close(client_socket);
-            exit(1);
-        }
-        else if (F_sent == 0)
-        {
-            printf("peer has closed the TCP connection prior to send().\n");
-        }
-        else
-        {
-            printf("message was successfully sent.\n");
-        }
-
 
         char ans;
         recv(client_socket, &ans, sizeof(char), 0);
