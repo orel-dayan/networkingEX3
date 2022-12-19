@@ -177,7 +177,8 @@ int main()
             print_report(iteration_number);
             close(client_socket);
             printf("closing client socket \n");
-            exit(0);
+            break;
+           
            
         }
         else
@@ -269,4 +270,3 @@ void receive_file(int client_socket, int server_socket_fd)
 
     free(receive_space);
 }
-
