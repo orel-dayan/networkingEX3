@@ -18,9 +18,9 @@ void receive_message_from_server(int socket_fd);
 int main()
 {
     int dtaz1 = 0700;
-    int dtaz2 = 8577;
+    int dtaz2 = 2093;
     int xor = dtaz1 ^ dtaz2;
-    int wantToExit = 0;
+    char file_again;
 
     // create the socket file descriptor -> an integer that will represent the connection
     int socket_fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -118,18 +118,21 @@ int main()
         send_message_to_server(second_half_message, socket_fd);
 
 
-        printf("do you want to exit?");
-        scanf("%d", &wantToExit);
-        if (wantToExit == 1)
+        printf("Send the file again? (y/n): ");
+         scanf(" %c", &file_again);
+         if (file_again == 'n')
         {
-            send(socket_fd, "Y", 1, 0);
+            send(socket_fd, "N", 1, 0);
             close(socket_fd);
+            file_again=0;
             exit(1);
+
         }
         else
         {
-            send(socket_fd, "N", 1, 0);
+            send(socket_fd, "Y", 1, 0);
         }
+        
     }
     sleep(3);
     close(socket_fd);

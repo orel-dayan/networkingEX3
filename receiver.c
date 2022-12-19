@@ -30,7 +30,7 @@ void print_report(int number_of_iterations);
 int main()
 {
     int dtaz1 = 0700;
-    int dtaz2 = 8577;
+    int dtaz2 = 2093;
     int xor = dtaz1 ^ dtaz2;
  
  
@@ -112,6 +112,11 @@ int main()
         *cubic_param = 0;
         enqueue(time_elapsed_cubic, iteration_number_p, cubic_param);
         
+        printf("algo: cubic, time: %ld.%06ld, iter num: %d\n",
+               (long int)tval_result_cubic.tv_sec,
+               (long int)tval_result_cubic.tv_usec,
+               iteration_number);
+        
         ///////////////////////////////////////////////////////////////////////////////////////////////////
 
         int num_message = xor;
@@ -163,7 +168,7 @@ int main()
 
         char ans;
         recv(client_socket, &ans, sizeof(char), 0);
-        if (ans == 'Y')
+        if (ans == 'N')
         {
               // print out the report
             printf("#######################\n");
