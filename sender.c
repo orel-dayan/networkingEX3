@@ -117,7 +117,7 @@ int main()
         printf("sending the second part of the file\n");
         send_message_to_server(second_half_message, socket_fd);
 
-
+        free_will:
         printf("Send the file again? (y/n): ");
          scanf(" %c", &file_again);
          if (file_again == 'n')
@@ -125,12 +125,49 @@ int main()
             send(socket_fd, "N", 1, 0);
             close(socket_fd);
             file_again=0;
+
+            printf("thank you for using our project.\n");
+            printf("if you want to leave comment about our work, insert 1.\n");
+            printf("else, if you want to exit, insert 0\n");
+            int ans;
+            scanf("%d", &ans);
+            if(ans == 1){
+                char opinion[1000];
+                printf("please insert your opinion (up to 1000 bytes)\n");
+
+                scanf("%s", opinion);
+
+                printf("thank you! we love to improve :) we will deliver your opinion to the gormim releventim.\n");
+                printf("///////////////////////////////////////////////////////////////////\n");
+                printf("                                                                   \n");
+                printf("                                       ////////////////////////////\n");
+                printf("                                     //                        // |\n");
+                printf("                                   //                        //   |\n");
+                printf("                                 //          /.../         //     |\n");
+                printf("                               /////////////////////////////      |\n");
+                printf("                               |                           |      |\n");
+                printf("   |||||||||||                 |                           |      |\n");
+                printf("   |         |                 |                           |      |\n");
+                printf("   | opinion |  -------->      |       //trash-can//       |      |\n");
+                printf("   |         |                 |                           |      |\n");
+                printf("   |||||||||||                 |                           |    // \n");
+                printf("                               |                           |  //   \n");
+                printf("                               |                           |//     \n");
+                printf("                               |////////////////////////////       \n");
+                printf("                                                                   \n");
+                printf("///////////////////////////////////////////////////////////////////\n");
+            }
             exit(1);
 
         }
-        else
+        else if(file_again == 'y')
         {
             send(socket_fd, "Y", 1, 0);
+        }
+        else
+        {
+            printf("so what do you want??\n");
+            goto free_will;
         }
         
     }
