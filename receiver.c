@@ -19,7 +19,7 @@
 #include "myqueue.h"
 
 
-#define SERVER_PORT 5060
+#define SERVER_PORT 3000
 #define FILE_SIZE_IN_BYTES 1979600
 #define CHUNK_SIZE 10000
 

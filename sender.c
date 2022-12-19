@@ -8,7 +8,7 @@
 #include <netinet/tcp.h>
 #include <stdio.h>
 
-#define SERVER_PORT 5060
+#define SERVER_PORT 3000
 #define SERVER_IP_ADDRESS "127.0.0.1"
 #define FILE_SIZE_IN_BYTES 1979600
 
@@ -122,7 +122,8 @@ int main()
          scanf(" %c", &file_again);
          if (file_again == 'n')
         {
-            send(socket_fd, "N", 1, 0);
+            int sent = send(socket_fd, "N", 1, 0);
+            if(sent == -1) close(socket_fd);
             close(socket_fd);
             file_again=0;
 
