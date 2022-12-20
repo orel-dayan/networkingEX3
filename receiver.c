@@ -1,39 +1,35 @@
 #include <stdio.h>
-#include <stdio.h>
 #include <sys/time.h>
-#include <time.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <sys/socket.h>
-#include <arpa/inet.h>
-#include <stdbool.h>
-#include <limits.h>
-#include <sys/types.h>
-#include <sys/socket.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
-#include <stdio.h>
-#include <time.h>
 #include <errno.h>
 #include "myqueue.h"
 
 
 #define SERVER_PORT 3000
 #define FILE_SIZE_IN_BYTES 1979600
-#define CHUNK_SIZE 10000
+#define CHUNK_SIZE 1024
 
-void receive_file(int client_socket, int server_socket_fd);
-
+void receive_file(char* receive_space, int client_socket, int server_socket_fd);
 void print_report(int number_of_iterations);
 
 int main()
 {
+    //calculation of xor values in xor variable
     int dtaz1 = 0700;
     int dtaz2 = 2093;
     int xor = dtaz1 ^ dtaz2;
- 
- 
+
+    char *receive_space = (char *)calloc((FILE_SIZE_IN_BYTES / 2), sizeof(char));
+    if (receive_space == NULL)
+    {
+        printf("place wasn't allocated!!\n");
+        exit(-1);
+    }
 
     // creating the server socket with the function socket()
     int server_socket_fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -42,19 +38,15 @@ int main()
         printf("Could not create socket: %d\n", errno);
     }
 
-    if (setsockopt(server_socket_fd, SOL_SOCKET, SO_REUSEADDR, "cubic", 5) == -1)
-    {
-        printf("setsockopt() failed with error code : %d\n", errno);
-        return 1;
-    }
-
     // creating the struct with the name and the address of the server
     struct sockaddr_in server_address;
     memset(&server_address, 0, sizeof(server_address));
 
+    //saving the ipv4 type and the server port using htons to convert the server port to network's order
     server_address.sin_family = AF_INET;
-    server_address.sin_addr.s_addr = INADDR_ANY;  // any IP at this port (Address to accept any incoming messages)
-    server_address.sin_port = htons(SERVER_PORT); // network order (makes byte order consistent)
+    //allow any IP at this port to address the server
+    server_address.sin_addr.s_addr = INADDR_ANY;
+    server_address.sin_port = htons(SERVER_PORT);
 
     int bind_res = bind(server_socket_fd, (struct sockaddr *)&server_address, sizeof(server_address));
     // if bind worked, bind_res == 0
@@ -74,16 +66,19 @@ int main()
         close(server_socket_fd);
         exit(1);
     }
+
+    //we created an infinite loop because we want our server to work all the time and receive requests from different clients
     while(1)
     {
-
-    // declaring a new struct for the client port and ip. accept will fill these in the struct
     printf("Waiting for incoming TCP-connections...\n");
+
+    // declaring a new struct for the client port and ip and zero all bytes in it. accept method will fill these in the struct
     struct sockaddr_in client_address; //
     socklen_t client_address_len = sizeof(client_address);
 
     memset(&client_address, 0, sizeof(client_address));
     client_address_len = sizeof(client_address);
+    //server will accept requests from client with accept method
     int client_socket = accept(server_socket_fd, (struct sockaddr *)&server_address, &client_address_len);
     if (client_socket == -1)
     {
@@ -93,17 +88,27 @@ int main()
     }
     int iteration_number = 0;
 
+    printf("welcome to our TCP server! :) make yourself at home\n");
 
+    //we created a second infinite loop because we want the server to receive the files as many times as the client wishes to send it
     while (1)
     {
+        //changing the cc algorithm to cubic
+        if (setsockopt(server_socket_fd, SOL_SOCKET, SO_REUSEADDR, "cubic", 5) == -1)
+        {
+            printf("setsockopt() failed with error code : %d\n", errno);
+            return 1;
+        }
+
         struct timeval start_t_cubic, end_t_cubic, tval_result_cubic; // will use them to check the timing
         struct timeval start_t_reno, end_t_reno, tval_result_reno;  
-          // will use them to check the timing
-        gettimeofday(&start_t_cubic, NULL);
-        receive_file(client_socket, server_socket_fd);
+        // will use them to check the timing
+        gettimeofday(&start_t_cubic, NULL); // start count for first part of the file
+        //receive the file from the client using receive_file method
+        receive_file(receive_space, client_socket, server_socket_fd);
         iteration_number++;
-        gettimeofday(&end_t_cubic, NULL);
-        timersub(&end_t_cubic, &start_t_cubic, &tval_result_cubic);
+        gettimeofday(&end_t_cubic, NULL); // finish count for first part of the file
+        timersub(&end_t_cubic, &start_t_cubic, &tval_result_cubic); // total time for cubic
         long int *time_elapsed_cubic = (long int *)malloc(sizeof(long int));
         *time_elapsed_cubic = tval_result_cubic.tv_sec * 1000000 + tval_result_cubic.tv_usec;
         int *iteration_number_p = (int *)malloc(sizeof(int));
@@ -119,6 +124,7 @@ int main()
         
         ///////////////////////////////////////////////////////////////////////////////////////////////////
 
+        //sending the xor value to client
         int num_message = xor;
 
         int bytes_sent = send(client_socket, &num_message, sizeof(num_message), 0);
@@ -150,10 +156,11 @@ int main()
         }
 
 
-        gettimeofday(&start_t_reno, NULL);
-        receive_file(client_socket, server_socket_fd);
-         gettimeofday(&end_t_reno, NULL);                         // finish count for first part of the file
-        timersub(&end_t_reno, &start_t_reno, &tval_result_reno); // the total time reno
+        gettimeofday(&start_t_reno, NULL); // start count for second part of the file
+        //receive the file from the client using receive_file method
+        receive_file(receive_space, client_socket, server_socket_fd);
+        gettimeofday(&end_t_reno, NULL); // finish count for second part of the file
+        timersub(&end_t_reno, &start_t_reno, &tval_result_reno); // total time for reno
         printf("algo: reno, time: %ld.%06ld, iter num: %d\n", (long int)tval_result_reno.tv_sec, (long int)tval_result_reno.tv_usec, iteration_number);
         // store the time elapsed in a variable
         long int time_elapsed_reno = tval_result_reno.tv_sec * 1000000 + tval_result_reno.tv_usec;
@@ -165,20 +172,19 @@ int main()
         ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 
+        // receive answer from client if he wants to proceed and send again of exit
         char ans;
         recv(client_socket, &ans, sizeof(char), 0);
         if (ans == 'N')
         {
-              // print out the report
-            printf("#######################\n");
-            printf("#######################\n");
+            // print out the report
+            printf("######################################\n");
+            printf("######################################\n");
             printf("the report is \n");
             print_report(iteration_number);
             close(client_socket);
             printf("closing client socket \n");
             break;
-           
-           
         }
         else
         {
@@ -186,10 +192,8 @@ int main()
         }
 
        }
+        free(receive_space);
     }
-
-    close(server_socket_fd);
-    return 0;
 }
 
 
@@ -228,19 +232,13 @@ void print_report(int number_of_iterations)
     printf("the average time for total is %ld \n", avg_total / number_of_dequeue);
 }
 
-
-void receive_file(int client_socket, int server_socket_fd)
+// a method that receive the file with recv method, receives a receive_space in the size of half of the file, client socket and server socket
+void receive_file(char* receive_space, int client_socket, int server_socket_fd)
 {
     int bytes_counter = 0;
     int bytes_received;
 
-    char *receive_space = (char *)calloc((FILE_SIZE_IN_BYTES / 2), sizeof(char));
-    if (receive_space == NULL)
-    {
-        printf("place wasn't allocated!!\n");
-        exit(-1);
-    }
-
+    //sends file in chunks of 1024 bytes
     while (bytes_counter + CHUNK_SIZE <= FILE_SIZE_IN_BYTES / 2)
     {
         bytes_received = recv(client_socket, receive_space, CHUNK_SIZE, 0);
@@ -255,6 +253,7 @@ void receive_file(int client_socket, int server_socket_fd)
         bytes_counter += bytes_received;
     }
 
+    // sends (FILE_SIZE_IN_BYTES/2) % 1024 leftover bytes
     bytes_received = recv(client_socket, receive_space, FILE_SIZE_IN_BYTES / 2 - bytes_counter, 0);
     if (bytes_received == -1)
     {
@@ -266,6 +265,4 @@ void receive_file(int client_socket, int server_socket_fd)
     }
 
     printf("bytes received: %d\n", bytes_counter + bytes_received);
-
-    free(receive_space);
 }

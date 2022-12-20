@@ -16,6 +16,7 @@ void send_message_to_server(char *half_file, int socket_fd);
 
 int main()
 {
+    //calculation of xor values in xor variable
     int dtaz1 = 0700;
     int dtaz2 = 2093;
     int xor = dtaz1 ^ dtaz2;
@@ -34,6 +35,7 @@ int main()
     // zero all bites of the server_address spot in memory
     memset(&server_address, 0, sizeof(server_address));
 
+    //transferring the ip from string to binary form
     int rval = inet_pton(AF_INET, (const char *)SERVER_IP_ADDRESS, &server_address.sin_addr);
     if (rval <= 0)
     {
@@ -41,9 +43,11 @@ int main()
         return -1;
     }
 
+    //saving the ipv4 type and the server port using htons to convert the server port to network's order
     server_address.sin_family = AF_INET;
     server_address.sin_port = htons(SERVER_PORT);
 
+    //connect to server
     if (connect(socket_fd, (struct sockaddr *)&server_address, sizeof(server_address)) == -1)
     {
         printf("connect() failed with error code: %d", -1);
@@ -51,17 +55,18 @@ int main()
 
     printf("connected to server\n");
 
+    //open the file
     FILE *myFile;
     myFile = fopen("butt.txt", "r");
 
-    // read file into array
-
+    // read the first half of the file into array
     char first_half_message[FILE_SIZE_IN_BYTES / 2];
     for (int i = 0; i < FILE_SIZE_IN_BYTES; i++)
     {
         fscanf(myFile, "%c", &first_half_message[i]);
     }
 
+    // read the second half of the file into array
     char second_half_message[FILE_SIZE_IN_BYTES - FILE_SIZE_IN_BYTES / 2];
     for (int i = FILE_SIZE_IN_BYTES - FILE_SIZE_IN_BYTES / 2; i < FILE_SIZE_IN_BYTES; i++)
     {
@@ -70,18 +75,21 @@ int main()
 
     /////////////////////////////////////////////////////////////////////////////////////////////
 
+    //infinet loop in order to send the file many times as we want
     while (1)
     {
+        //changing the cc algorithm to cubic
         if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, "cubic", 5) == -1)
         {
             printf("setsockopt() failed with error code : %d\n", errno);
             return 1;
         }
 
+        //sending the first half of the file using send_message_to_server method
         printf("sender: sending the first half of the file\n");
         send_message_to_server(first_half_message, socket_fd);
-        // receive_message_from_server(socket_fd);
 
+        //receiving the xor value in result from the server using the recv method
         int result = 0;
         int bytes_received = recv(socket_fd, &result, sizeof(result), 0);
         if (bytes_received == -1)
@@ -97,7 +105,7 @@ int main()
             printf("received %d bytes from server: %d\n", bytes_received, result);
         }
 
-
+        //if the sender's calculation of xor doesn't equal to the server calculation of xor close the socket, exit and let the user know
         if (xor != result)
         {
             printf("FRAUD!!!!\n");
@@ -105,31 +113,39 @@ int main()
             exit(1);
         }
 
-        sleep(1);
-
+        //change the cc algorithm to reno
         if (setsockopt(socket_fd, IPPROTO_TCP, TCP_CONGESTION, "reno", 4) == -1)
         {
             printf("setsockopt() failed with error code : %d\n", errno);
             return 1;
         }
 
+        //sending the second half of the file using send_message_to_server method
         printf("sending the second part of the file\n");
         send_message_to_server(second_half_message, socket_fd);
 
+        //telling the sender to sleep for 15 seconds in order to give the server more time to accept all data
+        //15 seconds is not always enough but average according to our research
+        sleep(15);
 
+        //user interface loop - asking the user if he wants to send the file again or exit the program
         free_will:
         printf("Send the file again? (y/n): ");
          scanf(" %c", &file_again);
          if (file_again == 'n')
         {
-            int sent = send(socket_fd, "N", 1, 0);
-            if(sent == -1) close(socket_fd);
+            //sending "N" to the server, equivalent to "EXIT" message from instructions
+            int exit_send = send(socket_fd, "N", 1, 0);
+            if(exit_send == -1){
+                printf("exit message has failed to send\n");
+            }
             close(socket_fd);
             file_again=0;
 
+            //recommended and nice user interface :)
             printf("thank you for using our project.\n");
-            printf("if you want to leave comment about our work, insert 1.\n");
-            printf("else, if you want to exit, insert 0\n");
+            printf("If you would like to leave input on our project, press 1.\n");
+            printf("else, if you want to exit, press 0\n");
             int ans;
             scanf("%d", &ans);
             if(ans == 1){
@@ -138,7 +154,7 @@ int main()
 
                 scanf("%s", opinion);
 
-                printf("thank you! we love to improve :) we will deliver your opinion to the gormim releventim.\n");
+                printf("thank you so much! It is very important for us to improve, we will now transfer your input to the relevant sources..\n");
                 printf("///////////////////////////////////////////////////////////////////\n");
                 printf("                                                                   \n");
                 printf("                                       ////////////////////////////\n");
@@ -163,20 +179,20 @@ int main()
         }
         else if(file_again == 'y')
         {
+            //send to server "Y", equivalent to telling the server "run again"
             send(socket_fd, "Y", 1, 0);
         }
         else
         {
+            //takes care if user enters another char besides y or n
             printf("so what do you want??\n");
             goto free_will;
         }
         
     }
-    sleep(3);
-    close(socket_fd);
-    return 0;
 }
 
+//function that sends half of the file to the receiver using send method
 void send_message_to_server(char *half_file, int socket_fd)
 {
     int bytes_sent = send(socket_fd, half_file, FILE_SIZE_IN_BYTES / 2, 0);
