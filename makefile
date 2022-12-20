@@ -1,9 +1,9 @@
-all:myqueue receiver sender server
-
-server:
-	gcc -o receiver receiver.o myqueue.o -Wall 	
+all:myqueue receiver.o receiver sender
 
 receiver:
+	gcc -o receiver receiver.o myqueue.o -Wall 	
+
+receiver.o:
 	gcc receiver.c -c -Wall 
 
 sender:
@@ -14,4 +14,5 @@ myqueue:
 
 clean:
 	rm -f *.o sender receiver
+
 
