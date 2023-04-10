@@ -1,7 +1,6 @@
 # Computer Networking Course Assigment 3
 University assignment 3 for Networking
-
-## For Computer Science B.S.c Ariel University
+### For Computer Science B.S.c Ariel University
 
 ## Authors
 - Orel Dayan
@@ -18,7 +17,7 @@ The client will be able to send the file as many times as he wants, which will h
 ## requierments
 the program runs on linux os only - can be on virtual machine or on a full linux enviroment only. 
 
-GCC Compiler
+ GCC Compiler
 
 iproute - for simulating packet loss 
 
